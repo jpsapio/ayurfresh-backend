@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "78ad783e-1a6f-4fc8-98b4-27c4e51fee54",
+		"name": "ayurfresh",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "27500019"
+	},
+	"item": [
+		{
+			"name": "New Folder",
+			"item": []
+		},
+		{
+			"name": "register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"testuser\",\n    \"email\": \"ayushdev@yopmail.com\",\n    \"password\": \"SecurePass123\",\n    \"password_confirmation\": \"SecurePass123\",\n    \"phone_number\": \"+919876543210\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/auth/register"
+			},
+			"response": []
+		},
+		{
+			"name": "verify profile",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/api/auth/verify-email?email=ayushdev%40yopmail.com&token=1114d61e-bccf-401c-97fe-236bb99fc571",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"auth",
+						"verify-email"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": "ayushdev%40yopmail.com"
+						},
+						{
+							"key": "token",
+							"value": "1114d61e-bccf-401c-97fe-236bb99fc571"
+						}
+					]
+				},
+				"description": "This api will verify the profile"
+			},
+			"response": []
+		},
+		{
+			"name": "login for user",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"login\": \"ayushdev@yopmail.com\",\n    \"password\": \"NewPassword123\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/auth/login"
+			},
+			"response": []
+		},
+		{
+			"name": "reset password",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzMwMzA5LCJleHAiOjE3NDk2MjYzMDl9.Ae_P7EN_HTTT8iv8pgiPnddY_SwDrml93Q-X5olb7_E"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MjU3NDUwLCJleHAiOjE3NDk1NTM0NTB9.ymJNMeuTlKOKKY0ISH0gvbWdQh9HUjrVDfhTDA1PQg8"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"oldPassword\":\"ayush@1234\",\"newPassword\":\"ayush@12\",\"confirmPassword\":\"ayush@12\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/auth/reset-password",
+				"description": "The token will be required in header ."
+			},
+			"response": []
+		},
+		{
+			"name": "forger password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"ayushdev@yopmail.com\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/auth/forget-password"
+			},
+			"response": []
+		},
+		{
+			"name": "forget password confirmation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"ayushdev@yopmail.com\",\n    \"token\": \"9513b966-5500-4677-b999-d071db5db311\",\n    \"password\": \"NewPassword123\",\n    \"confirm_password\": \"NewPassword123\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/auth/reset-forgot-password"
+			},
+			"response": []
+		},
+		{
+			"name": "get user profile details",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"login\": \"ayushdev@yopmail.com\",\n    \"password\": \"ayush@12\"\n  }"
+				},
+				"url": "http://localhost:8000/api/profile/details"
+			},
+			"response": []
+		},
+		{
+			"name": "update profile data",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQ1MDU2LCJleHAiOjE3NDk2NDEwNTZ9.6Lyx6EVRNEZ9wZrze5H-tzOkTlS19PspyejpsCSENA4"
+					}
+				},
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\":\"Ayush\"\n    \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/profile/details"
+			},
+			"response": []
+		},
+		{
+			"name": "send otp to verify phone",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQ1MDU2LCJleHAiOjE3NDk2NDEwNTZ9.6Lyx6EVRNEZ9wZrze5H-tzOkTlS19PspyejpsCSENA4"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"login\": \"ayushdev@yopmail.com\",\n    \"password\": \"ayush@12\"\n  }"
+				},
+				"url": "http://localhost:8000/api/profile/send-phone-otp"
+			},
+			"response": []
+		},
+		{
+			"name": "create new address",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer YOUR_JWT_TOKEN"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"John Doe\",\n  \"phone\": \"9876543210\",\n  \"house_no\": \"123\",\n  \"street\": \"Main Road\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"pincode\": \"400001\",\n  \"address_type\": \"HOME\",\n  \"is_primary\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/user/address"
+			},
+			"response": []
+		},
+		{
+			"name": "get all user addresses",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:8000/api/user/address"
+			},
+			"response": []
+		},
+		{
+			"name": "delete address",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{TOKEN}}"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": []
+				},
+				"url": "http://localhost:8000/api/user/address/5"
+			},
+			"response": []
+		},
+		{
+			"name": "update address",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{TOKEN}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"ayush\",\n  \"landmark\": \"Behind School\",\n  \"is_primary\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:8000/api/user/address/3"
+			},
+			"response": []
+		},
+		{
+			"name": "update primary status of address",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": {
+						"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJVU0VSIiwiaWF0IjoxNzQ4MzQxNzI1LCJleHAiOjE3NDk2Mzc3MjV9.Jt3QKSXWoeCk8AlU_7ARulZyJ19Fk2ab0MBBi3SF5v0"
+					}
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{TOKEN}}"
+					}
+				],
+				"url": "http://localhost:8000/api/user/address/2"
+			},
+			"response": []
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	]
+}

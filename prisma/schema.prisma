@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int               @id @default(autoincrement())
+  name         String
+  email        String            @unique @db.VarChar(191)
+  password     String
+  phone_number String?           @unique @db.VarChar(15)
+  role         Role              @default(USER)
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+  verification UserVerification?
+  preference   UserPreference?
+  addresses    Address[] 
+}
+
+model UserVerification {
+  id                   Int                @id @default(autoincrement())
+  user                 User               @relation(fields: [user_id], references: [id])
+  user_id              Int                @unique
+  email_status         VerificationStatus @default(PENDING)
+  email_verify_token   String?            @unique
+  email_verified_at    DateTime?
+  phone_status         VerificationStatus @default(PENDING)
+  phone_otp            String?
+  otp_expiry           DateTime?
+  phone_verified_at    DateTime?
+  password_reset_token String?            @unique
+  reset_token_expiry   DateTime?
+}
+
+model UserPreference {
+  id                     Int     @id @default(autoincrement())
+  user                   User    @relation(fields: [user_id], references: [id])
+  user_id                Int     @unique
+  notify_product_updates Boolean @default(false)
+}
+model Address {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [user_id], references: [id])
+  user_id      Int
+  name         String   
+  phone        String   @db.VarChar(15)
+  house_no     String
+  street       String
+  landmark     String?
+  city         String
+  state        String
+  country      String   @default("India")
+  pincode      String   @db.VarChar(6)
+  address_type AddressType @default(HOME)
+  is_primary   Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([user_id])
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+}
