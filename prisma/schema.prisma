@@ -8,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id           Int               @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   name         String
-  email        String            @unique @db.VarChar(191)
+  email        String   @unique @db.VarChar(191)
   password     String
-  phone_number String?           @unique @db.VarChar(15)
-  role         Role              @default(USER)
-  created_at   DateTime          @default(now())
-  updated_at   DateTime          @updatedAt
+  phone_number String?  @unique @db.VarChar(15)
+  role         Role     @default(USER)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   verification UserVerification?
   preference   UserPreference?
@@ -23,9 +23,6 @@ model User {
   products     Product[]
   orders       Order[]
 
-  // Ignored fields (computed)
-  email_verified Boolean? @ignore
-  phone_verified Boolean? @ignore
 }
 
 model UserVerification {

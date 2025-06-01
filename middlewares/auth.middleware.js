@@ -3,6 +3,7 @@ import { JWT_SECRET } from '../config/env.js';
 import prisma from '../config/db.js';
 import { errorResponse } from '../utils/responseHandler.js';
 
+
 export const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -11,12 +12,28 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = { userId: decoded.userId };
+    const { userId, email } = decoded;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId, email: email },
+    });
+
+    if (!user) {
+      return errorResponse(res, 401, 'Unauthorized: User does not exist');
+    }
+    req.user = {
+      userId: user.id,
+      role: user.role,
+      email: user.email,
+    };
+
     next();
   } catch (error) {
+    console.error('Auth Error:', error);
     return errorResponse(res, 401, 'Invalid or expired token');
   }
 };
+
 
 export const adminProtect = async (req, res, next) => {
   try {

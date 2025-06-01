@@ -5,7 +5,7 @@ import { createAddressSchema, updateAddressSchema } from '../validations/user.va
 import { updateProfileSchema } from "../validations/auth.validation.js";
 import { renderEmailEjs } from "../utils/ejsHandler.js";
 import { sendMail } from "../config/mail.js";
-import { APP } from "../config/env.js";
+import {  FRONTEND_URL } from "../config/env.js";
 import { successResponse, errorResponse } from '../utils/responseHandler.js';
 
 class UserController {
@@ -163,7 +163,7 @@ class UserController {
         redirectUrl: null
       });
 
-      await sendMail(updatedUser.email, `Profile Updated - ${APP}`, html);
+      await sendMail(updatedUser.email, `Profile Updated - ${FRONTEND_URL}`, html);
 
       return successResponse(res,200, 'Profile updated successfully', {
         id: updatedUser.id,

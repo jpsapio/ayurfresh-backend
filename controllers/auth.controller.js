@@ -23,9 +23,9 @@ import {
 class AuthController {
   static async register(req, res) {
     try {
-      const body = req.body;
-      const validator = vine.compile(registerSchema);
-      const payload = await validator.validate(body);
+        const body = req.body;
+        const validator = vine.compile(registerSchema);
+        const payload = await validator.validate(body);
 
       const existingUser = await prisma.user.findFirst({
         where: {
@@ -73,47 +73,48 @@ class AuthController {
 
       return successResponse(res, 200, `Registration successful! Check ${user.name} email for verification`);
     } catch (error) {
-      console.log(error);
+
       if (error instanceof errors.E_VALIDATION_ERROR) {
-        return validationErrorResponse(res,422, error.messages);
+        console.log(error.messages);
+        
+        return validationErrorResponse(res, error.messages);
       }
       return errorResponse(res, 500, error.message);
     }
   }
 
-  static async verifyEmail(req, res) {
-    try {
-      const { email, token } = req.query;
+static async verifyEmail(req, res) {
+  try {
+    const { email, token } = req.query;
 
-      console.log(email);
-      const user = await prisma.user.findUnique({
-        where: { email },
-        include: { verification: true },   
-      });
-console.log(user);
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { verification: true },
+    });
 
-      if (!user || user.verification.email_verify_token !== token) {
-        return errorResponse(res, 400, "Invalid verification link");
-      }
-
-      await prisma.userVerification.update({
-        where: { user_id: user.id },
-        data: {
-          email_status: "VERIFIED",
-          email_verify_token: null,
-          email_verified_at: new Date(),
-        },
-      });
-
-      return successResponse(res, 200, "Email verified successfully!", {
-        email: user.email,
-        verified_at: new Date(),
-      });
-    } catch (error) {
-      console.error("Verification Error:", error);
-      return errorResponse(res, 500, error.message);
+    if (!user || user.verification?.email_verify_token !== token) {
+      return errorResponse(res, 400, "Invalid verification link");
     }
+
+    await prisma.userVerification.update({
+      where: { user_id: user.id },
+      data: {
+        email_status: "VERIFIED",
+        email_verify_token: null,
+        email_verified_at: new Date(),
+      },
+    });
+
+    return successResponse(res, 200, "Email verified successfully!", {
+      email: user.email,
+      verified_at: new Date(),
+    });
+  } catch (error) {
+    console.error("Verification Error:", error);
+    return errorResponse(res, 500, error.message);
   }
+}
+
 
 
 static async resendEmailVerification  (req, res)  {
@@ -164,45 +165,51 @@ static async resendEmailVerification  (req, res)  {
     }
   };
 
-  static async login(req, res) {
-    try {
-      const validator = vine.compile(loginSchema);
-      const { login, password } = await validator.validate(req.body);
+static async login(req, res) {
+  try {
+    const validator = vine.compile(loginSchema);
+    const { login, password } = await validator.validate(req.body);
 
-      const user = await prisma.user.findFirst({
-        where: {
-          OR: [{ email: login }, { phone_number: login }],
-        },
-        include: { verification: true },
-      });
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [{ email: login }, { phone_number: login }],
+      },
+      include: { verification: true },
+    });
 
-      if (!user) {
-        return errorResponse(res, 401, "Invalid Phone number or Email.");
-      }
-
-      if (user.verification?.email_status !== "VERIFIED") {
-        return errorResponse(res, 403, "Email not verified. Please verify your email first.");
-      }
-
-      const validPassword = await bcrypt.compare(password, user.password);
-      if (!validPassword) {
-        return errorResponse(res, 401, "Incorrect password.");
-      }
-
-      const token = generateAuthToken(user);
-      return successResponse(res, 200, "Login successful", {
-        name: user.name,
-        email: user.email,
-        token,
-      });
-    } catch (error) {
-      if (error instanceof errors.E_VALIDATION_ERROR) {
-        return validationErrorResponse(res, error.messages);
-      }
-      console.error("Login Error:", error);
-      return errorResponse(res, 500, error.message);
+    if (!user) {
+      return errorResponse(res, 401, "Invalid Phone number or Email.");
     }
+
+    if (user.verification?.email_status !== "VERIFIED") {
+      return errorResponse(res, 403, "Email not verified. Please verify your email first.");
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return errorResponse(res, 401, "Incorrect password.");
+    }
+
+    const token = generateAuthToken({
+      userId: user.id,
+      role: user.role,
+      email: user.email,
+    });
+
+    return successResponse(res, 200, "Login successful", {
+      name: user.name,
+      email: user.email,
+      token,
+    });
+  } catch (error) {
+    if (error instanceof errors.E_VALIDATION_ERROR) {
+      return validationErrorResponse(res, error.messages);
+    }
+    console.error("Login Error:", error);
+    return errorResponse(res, 500, error.message);
   }
+}
+
 
   static async resetPassword(req, res) {
     try {
