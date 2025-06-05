@@ -4,13 +4,13 @@ vine.errorReporter = () => new CustomErrorReporter();
 export const productValidator = vine.object({
   name: vine.string().minLength(3),
   price: vine.number(),
-  offer_type: vine.enum(["PERCENTAGE", "PRICE_OFF"]).optional(),
-  offer_value: vine.number().optional(),
+  offer_type: vine.enum(["PERCENTAGE", "PRICE_OFF"]),
+  offer_value: vine.number(),
   category_id: vine.number(),
-  primary_image_index: vine.number().optional(),
- contents: vine.string().optional(),
-  description: vine.string().optional(),
-  stocks: vine.number().optional(),
+  primary_image_index: vine.number(),
+ contents: vine.string(),
+  description: vine.string(),
+  stocks: vine.number(),
   deal_types: vine
     .array(
       vine.enum([
@@ -21,7 +21,7 @@ export const productValidator = vine.object({
         "BEST_SELLER",
       ])
     )
-    .optional(),
+    ,
 });
 
 
