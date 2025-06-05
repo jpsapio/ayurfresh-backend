@@ -213,6 +213,87 @@ class UserController {
       return errorResponse(res, 500, 'Internal server error');
     }
   }
+
+  static async getAllUsers(req, res) {
+    try {
+      const users = await prisma.user.findMany({
+        include: {
+          addresses: true,
+          verification: true
+        }
+      });
+
+      const processedUsers = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone_number: user.phone_number,
+        email_verified: user.verification?.email_status === 'VERIFIED',
+        phone_verified: user.phone_number
+          ? user.verification?.phone_status === 'VERIFIED'
+          : false,
+        addresses: user.addresses.map(address => ({
+          id: address.id,
+          name: address.name,
+          phone: address.phone,
+          house_no: address.house_no,
+          street: address.street,
+          landmark: address.landmark,
+          city: address.city,
+          state: address.state,
+          country: address.country,
+          pincode: address.pincode,
+          address_type: address.address_type,
+          is_primary: address.is_primary
+        })),
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }));
+
+      return successResponse(res, 200, `Total ${processedUsers.length} users available`, processedUsers);
+    } catch (error) {
+      console.error(`Get users error: ${error.message}`);
+      return errorResponse(res, 500, 'Failed to fetch users');
+    }
+  }
+
+  static async updateUserRole(req, res) {
+    try {
+      const userId = parseInt(req.params.id);
+      const { role } = req.body;
+
+      if (!['USER', 'ADMIN'].includes(role)) {
+        return errorResponse(res, 400, 'Invalid role. Must be either USER or ADMIN.');
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { role },
+      });
+
+      return successResponse(res, 200, `User role updated to ${role}`, user);
+    } catch (error) {
+      console.error(`Update user role error: ${error.message}`);
+      return errorResponse(res, 500, 'Failed to update user role');
+    }
+  }
+
+  static async deleteUser(req, res) {
+    try {
+      const userId = parseInt(req.params.id);
+      await prisma.userVerification.deleteMany({ where: { user_id: userId } });
+      await prisma.address.deleteMany({ where: { user_id: userId } });
+      const deletedUser = await prisma.user.delete({
+        where: { id: userId },
+      });
+
+      return successResponse(res, 200, 'User deleted successfully', deletedUser);
+    } catch (error) {
+      console.error(`Delete user error: ${error.message}`);
+      return errorResponse(res, 500, 'Failed to delete user');
+    }
+  }
 }
 
 export default UserController;
