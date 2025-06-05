@@ -68,6 +68,12 @@ export const processAndUploadImages = async (files, slug, primary_index = 0) => 
   }));
 };
 
+export const deleteCloudinaryImage = async (url) => {
+  const publicId = url.split('/').slice(-1)[0].split('.')[0]
+  const folder = 'ayurfresh/products';
+  const fullPublicId = `${folder}/${publicId}`;
+  return cloudinary.uploader.destroy(fullPublicId);
+};
 
 export const slugify = (text) => {
   return text

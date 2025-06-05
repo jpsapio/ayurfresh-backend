@@ -7,9 +7,12 @@ import { errorResponse } from '../utils/responseHandler.js';
 export const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
+    console.log(req.headers);
+    
+    if (!token || token === 'null' || token === 'undefined') {
       return errorResponse(res, 401, 'Unauthorized: Token not provided');
     }
+console.log(token);
 
     const decoded = jwt.verify(token, JWT_SECRET);
     const { userId, email } = decoded;

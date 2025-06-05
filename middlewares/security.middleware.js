@@ -8,7 +8,7 @@ const securityMiddleware = (app) => {
   app.use(cors({
     origin: process.env.NODE_ENV === 'production' 
       ? ['https://your-frontend-domain.com'] 
-      : 'http://localhost:8000',
+      : ['http://localhost:8000','http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT','PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
   }));

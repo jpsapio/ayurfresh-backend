@@ -74,6 +74,7 @@ model Product {
   slug          String         @unique
   description   String?        @db.VarChar(1000)
   price         Float
+  stocks        Int            @default(0)
   offer_type    OfferType?
   offer_value   Float?
   offered_price Float?
