@@ -146,7 +146,7 @@ enum VerificationStatus {
 
 enum OfferType {
   PERCENTAGE
-  FIXED
+  PRICE_OFF
 }
 
 enum DealType {

@@ -15,7 +15,7 @@ routes.post(
   uploadProductImages,
   ProductController.create
 );
-routes.patch(
+routes.put(
   "/update-product/:id",
  authMiddleware,adminProtect,
   uploadProductImages,
