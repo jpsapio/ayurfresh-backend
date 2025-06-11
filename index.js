@@ -6,7 +6,7 @@ import { BACKEND_URL, NODE_ENV, PORT } from './config/env.js';
 import routes from './routes/index.js';
 import path from "path"
 import { fileURLToPath } from 'url';
-const app = express(); 
+const app = express();  
 
 const port = PORT ||3000;
 app.use(express.json({ limit: '10kb' }));

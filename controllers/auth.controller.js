@@ -45,7 +45,7 @@ class AuthController {
 
       const hashedPassword = await bcrypt.hash(payload.password, 10);
       const verificationToken = uuidv4();
-      const verificationUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(
+      const verificationUrl = `${FRONTEND_URL}/verify-email?email=${encodeURIComponent(
         payload.email
       )}&token=${verificationToken}`;
 

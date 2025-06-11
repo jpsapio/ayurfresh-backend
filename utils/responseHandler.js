@@ -10,7 +10,7 @@ export function successResponse(res, status=200, message = "Success", data = {})
 export function errorResponse(res, status = 500, message = "Something went wrong") {
   return res.status(status).json({
     success: false,
-    message,
+   errors: message,
   });
 }
 
