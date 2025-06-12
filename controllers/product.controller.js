@@ -132,8 +132,17 @@ class ProductController {
     try {
       const products = await prisma.product.findMany({
         include: {
-          category: true,
-          images: true,
+          category: {
+            select: {
+              name: true,
+              slug: true,
+            },
+          },
+          images: {
+            select: {
+              url: true,
+            },
+          },
           created_by: {
             select: {
               id: true,
@@ -146,18 +155,53 @@ class ProductController {
           created_at: "desc",
         },
       });
-
+  
+      const transformedProducts = products.map((product) => {
+        const words = product.description.split(" ");
+        const shortDescription =
+          words.length > 12 ? words.slice(0, 12).join(" ") + "..." : product.description;
+  
+        let offeredPrice = null;
+        if (product.offer_type === "PRICE_OFF") {
+          offeredPrice = product.price - product.offer_value;
+        } else if (product.offer_type === "PERCENTAGE") {
+          offeredPrice = Math.round(product.price - (product.price * product.offer_value) / 100);
+        }
+  
+        return {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          description: shortDescription,
+          price: product.price,
+          stocks: product.stocks,
+          offer_value: product.offer_value,
+          offer_type: product.offer_type,
+          offered_price: offeredPrice,
+          category_id: product.category_id,
+          user_id: product.user_id,
+          deal_type: product.deal_types || [],
+          created_at: product.created_at,
+          category: {
+            name: product.category.name,
+            slug: product.category.slug,
+          },
+          image: product.images.length > 0 ? product.images[0].url : null,
+        };
+      });
+  
       return successResponse(
         res,
         200,
-        "Products fetched successfully",
-        products
+        `Total ${transformedProducts.length} products available`,
+        transformedProducts
       );
     } catch (error) {
       console.error("Get All Products Error:", error);
       return errorResponse(res, 500, "Internal server error");
     }
   }
+  
 static async delete(req, res) {
   try {
     const { id } = req.params;

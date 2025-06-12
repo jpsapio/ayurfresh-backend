@@ -99,9 +99,9 @@ class CategoryController {
 
   static async getById(req, res) {
     try {
-      const { id } = req.params
+      const { slug } = req.params
       const category = await prisma.category.findUnique({
-        where: { id: parseInt(id) },
+        where: { slug: slug },
       })
       if (!category) return errorResponse(res, 404, 'Category not found')
       return successResponse(res, 200, 'Category found', category)
