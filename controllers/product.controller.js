@@ -201,6 +201,145 @@ class ProductController {
       return errorResponse(res, 500, "Internal server error");
     }
   }
+
+  static async getByCategorySlug(req, res) {
+  const { categorySlug } = req.params;
+
+  if (!categorySlug) {
+    return errorResponse(res, 400, "Category slug is required");
+  }
+
+  try {
+    const category = await prisma.category.findUnique({
+      where: { slug: categorySlug },
+    });
+
+    if (!category) {
+      return errorResponse(res, 404, "Category not found");
+    }
+
+    const products = await prisma.product.findMany({
+      where: {
+        category_id: category.id,
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+    });
+
+    const transformedProducts = products.map((product) => {
+      let offeredPrice = null;
+      if (product.offer_type === "PRICE_OFF") {
+        offeredPrice = product.price - product.offer_value;
+      } else if (product.offer_type === "PERCENTAGE") {
+        offeredPrice = Math.round(product.price - (product.price * product.offer_value) / 100);
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        description: product.description,
+        price: product.price,
+        stocks: product.stocks,
+        offer_value: product.offer_value,
+        offer_type: product.offer_type,
+        offered_price: offeredPrice,
+        category_id: product.category_id,
+        user_id: product.user_id,
+        deal_type: product.deal_types || [],
+        created_at: product.created_at,
+        category: product.category,
+        image: product.images.length > 0 ? product.images[0].url : null,
+      };
+    });
+
+    return successResponse(
+      res,
+      200,
+      `Total ${transformedProducts.length} products found in category '${category.name}'`,
+      transformedProducts
+    );
+  } catch (error) {
+    console.error("Get Products By Category Slug Error:", error);
+    return errorResponse(res, 500, "Internal server error");
+  }
+}
+
+static async getBySlug(req, res) {
+  const { slug } = req.params;
+
+  try {
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+        images: {
+          select: {
+            url: true,
+          },
+        },
+        created_by: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      return errorResponse(res, 404, "Product not found");
+    }
+
+    let offeredPrice = null;
+    if (product.offer_type === "PRICE_OFF") {
+      offeredPrice = product.price - product.offer_value;
+    } else if (product.offer_type === "PERCENTAGE") {
+      offeredPrice = Math.round(product.price - (product.price * product.offer_value) / 100);
+    }
+
+    const transformedProduct = {
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      offer_type: product.offer_type,
+      offer_value: product.offer_value,
+      offered_price: offeredPrice,
+      contents: product.contents || null,
+      deal_type: product.deal_types || [],
+      stocks: product.stocks,
+      category: product.category,
+      images: product.images.map((img) => img.url),
+      created_by: product.created_by,
+    };
+
+    return successResponse(res, 200, "Product fetched successfully", transformedProduct);
+  } catch (error) {
+    console.error("Get Product By Slug Error:", error);
+    return errorResponse(res, 500, "Internal server error");
+  }
+}
+
   
 static async delete(req, res) {
   try {
