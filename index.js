@@ -7,7 +7,7 @@ import routes from './routes/index.js';
 import path from "path"
 import { fileURLToPath } from 'url';
 const app = express();  
-
+ 
 const port = PORT ||3000;
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
