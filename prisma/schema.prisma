@@ -22,7 +22,6 @@ model User {
   addresses    Address[]
   products     Product[]
   orders       Order[]
-
 }
 
 model UserVerification {

@@ -23,13 +23,16 @@ import {
 class AuthController {
   static async register(req, res) {
     try {
-        const body = req.body;
-        const validator = vine.compile(registerSchema);
-        const payload = await validator.validate(body);
+      const body = req.body;
+      const validator = vine.compile(registerSchema);
+      const payload = await validator.validate(body);
 
       const existingUser = await prisma.user.findFirst({
         where: {
-          OR: [{ email: payload.email }, { phone_number: payload.phone_number }],
+          OR: [
+            { email: payload.email },
+            { phone_number: payload.phone_number },
+          ],
         },
       });
 
@@ -71,91 +74,94 @@ class AuthController {
 
       await sendMail(user.email, "Verify Your Email - Ayurfresh", html);
 
-      return successResponse(res, 200, `Registration successful! Check ${user.name} email for verification`);
+      return successResponse(
+        res,
+        200,
+        `Registration successful! Check ${user.name} email for verification`
+      );
     } catch (error) {
-
       if (error instanceof errors.E_VALIDATION_ERROR) {
         console.log(error.messages);
-        
+
         return validationErrorResponse(res, error.messages);
       }
       return errorResponse(res, 500, error.message);
     }
   }
 
-static async verifyEmail(req, res) {
-  try {
-    const { email, token } = req.query;
-console.log(email , token);
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { verification: true },
-    });
-
-    if (!user || user.verification?.email_verify_token !== token) {
-      return errorResponse(res, 400, "Invalid verification link");
-    }
-
-    await prisma.userVerification.update({
-      where: { user_id: user.id },
-      data: {
-        email_status: "VERIFIED",
-        email_verify_token: null,
-        email_verified_at: new Date(),
-      },
-    });
-
-    return successResponse(res, 200, "Email verified successfully!", {
-      email: user.email,
-      verified_at: new Date(),
-    });
-  } catch (error) {
-    console.error("Verification Error:", error);
-    return errorResponse(res, 500, error.message);
-  }
-}
-
-
-
-static async resendEmailVerification  (req, res)  {
+  static async verifyEmail(req, res) {
     try {
-      const { email } = req.body;
-  
-      if (!email) {
-        return errorResponse(res, 400, "Email is required");
-      }
-  
+      const { email, token } = req.query;
+      console.log(email, token);
+
       const user = await prisma.user.findUnique({
         where: { email },
         include: { verification: true },
       });
-  
+
+      if (!user || user.verification?.email_verify_token !== token) {
+        return errorResponse(res, 400, "Invalid verification link");
+      }
+
+      await prisma.userVerification.update({
+        where: { user_id: user.id },
+        data: {
+          email_status: "VERIFIED",
+          email_verify_token: null,
+          email_verified_at: new Date(),
+        },
+      });
+
+      return successResponse(res, 200, "Email verified successfully!", {
+        email: user.email,
+        verified_at: new Date(),
+      });
+    } catch (error) {
+      console.error("Verification Error:", error);
+      return errorResponse(res, 500, error.message);
+    }
+  }
+
+  static async resendEmailVerification(req, res) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return errorResponse(res, 400, "Email is required");
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+        include: { verification: true },
+      });
+
       if (!user) {
         return errorResponse(res, 404, "User not found with this email");
       }
-  
+
       if (user.verification?.email_status === "VERIFIED") {
         return errorResponse(res, 400, "Email already verified");
       }
-  
+
       const newToken = uuidv4();
-      const verificationUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(email)}&token=${newToken}`;
-  
+      const verificationUrl = `${BACKEND_URL}/api/auth/verify-email?email=${encodeURIComponent(
+        email
+      )}&token=${newToken}`;
+
       await prisma.userVerification.update({
         where: { user_id: user.id },
         data: {
           email_verify_token: newToken,
         },
       });
-  
+
       const html = await renderEmailEjs("verify-email", {
         name: user.name,
         url: verificationUrl,
       });
-  
+
       await sendMail(user.email, "Resend Email Verification - Ayurfresh", html);
-  
+
       return successResponse(res, 200, `Verification link resent to ${email}`);
     } catch (error) {
       console.error(error);
@@ -164,53 +170,56 @@ static async resendEmailVerification  (req, res)  {
       }
       return errorResponse(res, 500, error.message);
     }
-  };
-
-static async login(req, res) {
-  try {
-    const validator = vine.compile(loginSchema);
-    const { login, password } = await validator.validate(req.body);
-
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: login }, { phone_number: login }],
-      },
-      include: { verification: true },
-    });
-
-    if (!user) {
-      return errorResponse(res, 401, "Invalid Phone number or Email.");
-    }
-
-    if (user.verification?.email_status !== "VERIFIED") {
-      return errorResponse(res, 403, "Email not verified. Please verify your email first.");
-    }
-
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return errorResponse(res, 401, "Incorrect password.");
-    }
-
-    const token = generateAuthToken({
-      userId: user.id,
-      role: user.role,
-      email: user.email,
-    });
-
-    return successResponse(res, 200, "Login successful", {
-      name: user.name,
-      email: user.email,
-      token,
-    });
-  } catch (error) {
-    if (error instanceof errors.E_VALIDATION_ERROR) {
-      return validationErrorResponse(res, error.messages);
-    }
-    console.error("Login Error:", error);
-    return errorResponse(res, 500, error.message);
   }
-}
 
+  static async login(req, res) {
+    try {
+      const validator = vine.compile(loginSchema);
+      const { login, password } = await validator.validate(req.body);
+
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [{ email: login }, { phone_number: login }],
+        },
+        include: { verification: true },
+      });
+
+      if (!user) {
+        return errorResponse(res, 401, "Invalid Phone number or Email.");
+      }
+
+      if (user.verification?.email_status !== "VERIFIED") {
+        return errorResponse(
+          res,
+          403,
+          "Email not verified. Please verify your email first."
+        );
+      }
+
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return errorResponse(res, 401, "Incorrect password.");
+      }
+
+      const token = generateAuthToken({
+        userId: user.id,
+        role: user.role,
+        email: user.email,
+      });
+
+      return successResponse(res, 200, "Login successful", {
+        name: user.name,
+        email: user.email,
+        token,
+      });
+    } catch (error) {
+      if (error instanceof errors.E_VALIDATION_ERROR) {
+        return validationErrorResponse(res, error.messages);
+      }
+      console.error("Login Error:", error);
+      return errorResponse(res, 500, error.message);
+    }
+  }
 
   static async resetPassword(req, res) {
     try {
@@ -235,7 +244,8 @@ static async login(req, res) {
 
       const html = await renderEmailEjs("message", {
         title: "Password reset message",
-        message: "The password has been successfully reset. Click below to go to our website.",
+        message:
+          "The password has been successfully reset. Click below to go to our website.",
         redirectUrl: FRONTEND_URL,
       });
 
@@ -372,7 +382,10 @@ static async login(req, res) {
         },
       });
 
-      const smsRes = await sendSMS(user.phone_number, `Your OTP is ${otp}. Valid for 5 minutes.`);
+      const smsRes = await sendSMS(
+        user.phone_number,
+        `Your OTP is ${otp}. Valid for 5 minutes.`
+      );
 
       if (!smsRes.success) {
         return errorResponse(res, 500, smsRes.error || "Failed to send OTP");

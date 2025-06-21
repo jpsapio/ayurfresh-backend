@@ -1,24 +1,27 @@
-import vine, { errors } from '@vinejs/vine';
-import prisma from '../config/db.js';
-import logger from '../utils/logger.js';
-import { createAddressSchema, updateAddressSchema } from '../validations/user.validation.js';
+import vine, { errors } from "@vinejs/vine";
+import prisma from "../config/db.js";
+import logger from "../utils/logger.js";
+import {
+  createAddressSchema,
+  updateAddressSchema,
+} from "../validations/user.validation.js";
 import { updateProfileSchema } from "../validations/auth.validation.js";
 import { renderEmailEjs } from "../utils/ejsHandler.js";
 import { sendMail } from "../config/mail.js";
-import {  FRONTEND_URL } from "../config/env.js";
-import { successResponse, errorResponse } from '../utils/responseHandler.js';
+import { FRONTEND_URL } from "../config/env.js";
+import { successResponse, errorResponse } from "../utils/responseHandler.js";
 
 class UserController {
   static async getAllAddresses(req, res) {
     try {
       const addresses = await prisma.address.findMany({
         where: { user_id: req.user.userId },
-        orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }]
+        orderBy: [{ is_primary: "desc" }, { updated_at: "desc" }],
       });
-      return successResponse(res,200,"User addresses", addresses);
+      return successResponse(res, 200, "User addresses", addresses);
     } catch (error) {
       logger.error(`Get addresses error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to fetch addresses');
+      return errorResponse(res, 500, "Failed to fetch addresses");
     }
   }
 
@@ -30,14 +33,16 @@ class UserController {
 
       if (data.is_primary) await UserController.resetPrimaryAddress(userId);
 
-      const address = await prisma.address.create({ data: { ...data, user_id: userId } });
-      return successResponse(res,201, 'Address created successfully',address );
+      const address = await prisma.address.create({
+        data: { ...data, user_id: userId },
+      });
+      return successResponse(res, 201, "Address created successfully", address);
     } catch (error) {
       console.log(error);
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return errorResponse(res, 422, error.messages);
       }
-      return errorResponse(res, 500, 'Internal server error');
+      return errorResponse(res, 500, "Internal server error");
     }
   }
 
@@ -52,21 +57,32 @@ class UserController {
 
       const updated = await prisma.address.updateMany({
         where: { id: parseInt(id), user_id: userId },
-        data
+        data,
       });
 
       if (updated.count === 0) {
-        return errorResponse(res, 404, 'Address not found or you don\'t have permission');
+        return errorResponse(
+          res,
+          404,
+          "Address not found or you don't have permission"
+        );
       }
 
-      const updatedAddress = await prisma.address.findUnique({ where: { id: parseInt(id) } });
-      return successResponse(res,200, 'Address updated successfully', updatedAddress);
+      const updatedAddress = await prisma.address.findUnique({
+        where: { id: parseInt(id) },
+      });
+      return successResponse(
+        res,
+        200,
+        "Address updated successfully",
+        updatedAddress
+      );
     } catch (error) {
       logger.error(`Update address error: ${error.message}`);
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return errorResponse(res, 422, error.messages);
       }
-      return errorResponse(res, 500, 'Internal server error');
+      return errorResponse(res, 500, "Internal server error");
     }
   }
 
@@ -76,30 +92,30 @@ class UserController {
       const userId = req.user.userId;
 
       const address = await prisma.address.findUnique({
-        where: { id: parseInt(id), user_id: userId }
+        where: { id: parseInt(id), user_id: userId },
       });
 
-      if (!address) return errorResponse(res, 404, 'Address not found');
+      if (!address) return errorResponse(res, 404, "Address not found");
 
       await prisma.address.delete({ where: { id: parseInt(id) } });
 
       if (address.is_primary) {
         const newPrimary = await prisma.address.findFirst({
           where: { user_id: userId },
-          orderBy: { created_at: 'desc' }
+          orderBy: { created_at: "desc" },
         });
         if (newPrimary) {
           await prisma.address.update({
             where: { id: newPrimary.id },
-            data: { is_primary: true }
+            data: { is_primary: true },
           });
         }
       }
 
-      return successResponse(res, 200, 'Address deleted successfully',{});
+      return successResponse(res, 200, "Address deleted successfully", {});
     } catch (error) {
       logger.error(`Delete address error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to delete address');
+      return errorResponse(res, 500, "Failed to delete address");
     }
   }
 
@@ -112,20 +128,25 @@ class UserController {
 
       const primaryAddress = await prisma.address.update({
         where: { id: parseInt(id), user_id: userId },
-        data: { is_primary: true }
+        data: { is_primary: true },
       });
 
-      return successResponse(res,200, 'Primary address updated', primaryAddress);
+      return successResponse(
+        res,
+        200,
+        "Primary address updated",
+        primaryAddress
+      );
     } catch (error) {
       console.log(`Set primary error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to set primary address');
+      return errorResponse(res, 500, "Failed to set primary address");
     }
   }
 
   static async resetPrimaryAddress(userId) {
     await prisma.address.updateMany({
       where: { user_id: userId, is_primary: true },
-      data: { is_primary: false }
+      data: { is_primary: false },
     });
   }
 
@@ -135,48 +156,64 @@ class UserController {
       const validator = vine.compile(updateProfileSchema);
       const payload = await validator.validate(req.body);
 
-      if (!Object.keys(payload).length) return errorResponse(res, 400, 'No fields to update');
+      if (!Object.keys(payload).length)
+        return errorResponse(res, 400, "No fields to update");
 
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) return errorResponse(res, 404, 'User not found');
+      if (!user) return errorResponse(res, 404, "User not found");
 
       if (payload.email && payload.email !== user.email) {
-        const emailUser = await prisma.user.findUnique({ where: { email: payload.email } });
+        const emailUser = await prisma.user.findUnique({
+          where: { email: payload.email },
+        });
         if (emailUser && emailUser.id !== userId) {
-          return errorResponse(res, 422, { email: 'Email already in use' });
+          return errorResponse(res, 422, { email: "Email already in use" });
         }
       }
 
       if (payload.phone_number && payload.phone_number !== user.phone_number) {
-        const phoneUser = await prisma.user.findUnique({ where: { phone_number: payload.phone_number } });
+        const phoneUser = await prisma.user.findUnique({
+          where: { phone_number: payload.phone_number },
+        });
         if (phoneUser && phoneUser.id !== userId) {
-          return errorResponse(res, 422, { phone_number: 'Phone number already in use' });
+          return errorResponse(res, 422, {
+            phone_number: "Phone number already in use",
+          });
         }
       }
 
-      const updatedUser = await prisma.user.update({ where: { id: userId }, data: payload });
-      const updates = Object.entries(payload).map(([k, v]) => `<strong>${k}</strong>: ${v}`).join('<br/>');
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: payload,
+      });
+      const updates = Object.entries(payload)
+        .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+        .join("<br/>");
 
-      const html = await renderEmailEjs('message', {
-        title: 'Profile Updated',
+      const html = await renderEmailEjs("message", {
+        title: "Profile Updated",
         message: `Your profile has been updated:<br/><br/>${updates}`,
-        redirectUrl: null
+        redirectUrl: null,
       });
 
-      await sendMail(updatedUser.email, `Profile Updated - ${FRONTEND_URL}`, html);
+      await sendMail(
+        updatedUser.email,
+        `Profile Updated - ${FRONTEND_URL}`,
+        html
+      );
 
-      return successResponse(res,200, 'Profile updated successfully', {
+      return successResponse(res, 200, "Profile updated successfully", {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
-        phone_number: updatedUser.phone_number
+        phone_number: updatedUser.phone_number,
       });
     } catch (error) {
       console.error(error);
       if (error instanceof errors.E_VALIDATION_ERROR) {
         return errorResponse(res, 422, error.messages);
       }
-      return errorResponse(res, 500, 'Internal server error');
+      return errorResponse(res, 500, "Internal server error");
     }
   }
 
@@ -191,26 +228,29 @@ class UserController {
           email: true,
           phone_number: true,
           created_at: true,
-          verification: { select: { email_status: true, phone_status: true } }
-        }
+          verification: { select: { email_status: true, phone_status: true } },
+        },
       });
 
-      if (!user) return errorResponse(res, 404, 'User not found');
+      if (!user) return errorResponse(res, 404, "User not found");
 
-      return successResponse(res,200, `Hello ${user.name}, Welcome Back`, {
+      return successResponse(res, 200, `Hello ${user.name}, Welcome Back`, {
         id: user.id,
         name: user.name,
         email: user.email,
         phone_number: user.phone_number,
-        joined_at: user.created_at.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        joined_at: user.created_at.toLocaleString("en-IN", {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }),
         profile_status: {
-          email_status: user.verification?.email_status || 'PENDING',
-          phone_status: user.verification?.phone_status || 'PENDING'
-        }
+          email_status: user.verification?.email_status || "PENDING",
+          phone_status: user.verification?.phone_status || "PENDING",
+        },
       });
     } catch (error) {
       console.error(error);
-      return errorResponse(res, 500, 'Internal server error');
+      return errorResponse(res, 500, "Internal server error");
     }
   }
 
@@ -219,21 +259,21 @@ class UserController {
       const users = await prisma.user.findMany({
         include: {
           addresses: true,
-          verification: true
-        }
+          verification: true,
+        },
       });
 
-      const processedUsers = users.map(user => ({
+      const processedUsers = users.map((user) => ({
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         phone_number: user.phone_number,
-        email_verified: user.verification?.email_status === 'VERIFIED',
+        email_verified: user.verification?.email_status === "VERIFIED",
         phone_verified: user.phone_number
-          ? user.verification?.phone_status === 'VERIFIED'
+          ? user.verification?.phone_status === "VERIFIED"
           : false,
-        addresses: user.addresses.map(address => ({
+        addresses: user.addresses.map((address) => ({
           id: address.id,
           name: address.name,
           phone: address.phone,
@@ -245,16 +285,21 @@ class UserController {
           country: address.country,
           pincode: address.pincode,
           address_type: address.address_type,
-          is_primary: address.is_primary
+          is_primary: address.is_primary,
         })),
         created_at: user.created_at,
-        updated_at: user.updated_at
+        updated_at: user.updated_at,
       }));
 
-      return successResponse(res, 200, `Total ${processedUsers.length} users available`, processedUsers);
+      return successResponse(
+        res,
+        200,
+        `Total ${processedUsers.length} users available`,
+        processedUsers
+      );
     } catch (error) {
       console.error(`Get users error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to fetch users');
+      return errorResponse(res, 500, "Failed to fetch users");
     }
   }
 
@@ -263,8 +308,12 @@ class UserController {
       const userId = parseInt(req.params.id);
       const { role } = req.body;
 
-      if (!['USER', 'ADMIN'].includes(role)) {
-        return errorResponse(res, 400, 'Invalid role. Must be either USER or ADMIN.');
+      if (!["USER", "ADMIN"].includes(role)) {
+        return errorResponse(
+          res,
+          400,
+          "Invalid role. Must be either USER or ADMIN."
+        );
       }
 
       const user = await prisma.user.update({
@@ -275,7 +324,7 @@ class UserController {
       return successResponse(res, 200, `User role updated to ${role}`, user);
     } catch (error) {
       console.error(`Update user role error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to update user role');
+      return errorResponse(res, 500, "Failed to update user role");
     }
   }
 
@@ -288,10 +337,15 @@ class UserController {
         where: { id: userId },
       });
 
-      return successResponse(res, 200, 'User deleted successfully', deletedUser);
+      return successResponse(
+        res,
+        200,
+        "User deleted successfully",
+        deletedUser
+      );
     } catch (error) {
       console.error(`Delete user error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to delete user');
+      return errorResponse(res, 500, "Failed to delete user");
     }
   }
 }
