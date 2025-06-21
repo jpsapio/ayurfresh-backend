@@ -86,6 +86,7 @@ class AuthController {
 static async verifyEmail(req, res) {
   try {
     const { email, token } = req.query;
+console.log(email , token);
 
     const user = await prisma.user.findUnique({
       where: { email },
