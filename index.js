@@ -7,12 +7,12 @@ import routes from './routes/index.js';
 import path from "path"
 import { fileURLToPath } from 'url';
 const app = express();  
- 
+   
 const port = PORT ||3000;
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
 securityMiddleware(app);
-
+ 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.set("view engine", "ejs");
 app.set("views", path.resolve(__dirname, "./views"));

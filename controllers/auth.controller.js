@@ -83,38 +83,46 @@ class AuthController {
     }
   }
 
-static async verifyEmail(req, res) {
-  try {
-    const { email, token } = req.query;
-console.log(email , token);
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { verification: true },
-    });
-
-    if (!user || user.verification?.email_verify_token !== token) {
-      return errorResponse(res, 400, "Invalid verification link");
+  static async verifyEmail(req, res) {
+    try {
+      const { email, token } = req.query;
+      console.log("Received:", email, token);
+  
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
+  
+      if (!user) {
+        return errorResponse(res, 400, "User not found");
+      }
+  
+      const verification = await prisma.userVerification.findUnique({
+        where: { user_id: user.id },
+      });
+  
+      if (!verification || verification.email_verify_token !== token) {
+        return errorResponse(res, 400, "Invalid verification link");
+      }
+  
+      await prisma.userVerification.update({
+        where: { user_id: user.id },
+        data: {
+          email_status: "VERIFIED",
+          email_verify_token: null,
+          email_verified_at: new Date(),
+        },
+      });
+  
+      return successResponse(res, 200, "Email verified successfully!", {
+        email: user.email,
+        verified_at: new Date(),
+      });
+    } catch (error) {
+      console.error("Verification Error:", error);
+      return errorResponse(res, 500, error.message);
     }
-
-    await prisma.userVerification.update({
-      where: { user_id: user.id },
-      data: {
-        email_status: "VERIFIED",
-        email_verify_token: null,
-        email_verified_at: new Date(),
-      },
-    });
-
-    return successResponse(res, 200, "Email verified successfully!", {
-      email: user.email,
-      verified_at: new Date(),
-    });
-  } catch (error) {
-    console.error("Verification Error:", error);
-    return errorResponse(res, 500, error.message);
   }
-}
+  
 
 
 
