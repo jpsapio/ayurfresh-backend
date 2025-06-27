@@ -21,10 +21,10 @@ app.use(requestLogger);
 
 app.use(routes)
   
-
+ 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', environment: NODE_ENV });
-});
+}); 
 app.listen(port, () => {
   console.log(`Server is running at ${BACKEND_URL}`);
 });

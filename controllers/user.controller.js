@@ -7,128 +7,10 @@ import { renderEmailEjs } from "../utils/ejsHandler.js";
 import { sendMail } from "../config/mail.js";
 import {  FRONTEND_URL } from "../config/env.js";
 import { successResponse, errorResponse } from '../utils/responseHandler.js';
+import { getPaginationParams } from '../utils/helper.js';
 
 class UserController {
-  static async getAllAddresses(req, res) {
-    try {
-      const addresses = await prisma.address.findMany({
-        where: { user_id: req.user.userId },
-        orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }]
-      });
-      return successResponse(res,200,"User addresses", addresses);
-    } catch (error) {
-      logger.error(`Get addresses error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to fetch addresses');
-    }
-  }
-
-  static async createAddress(req, res) {
-    try {
-      const validator = vine.compile(createAddressSchema);
-      const data = await validator.validate(req.body);
-      const userId = req.user.userId;
-
-      if (data.is_primary) await UserController.resetPrimaryAddress(userId);
-
-      const address = await prisma.address.create({ data: { ...data, user_id: userId } });
-      return successResponse(res,201, 'Address created successfully',address );
-    } catch (error) {
-      console.log(error);
-      if (error instanceof errors.E_VALIDATION_ERROR) {
-        return errorResponse(res, 422, error.messages);
-      }
-      return errorResponse(res, 500, 'Internal server error');
-    }
-  }
-
-  static async updateAddress(req, res) {
-    try {
-      const validator = vine.compile(updateAddressSchema);
-      const data = await validator.validate(req.body);
-      const { id } = req.params;
-      const userId = req.user.userId;
-
-      if (data.is_primary) await UserController.resetPrimaryAddress(userId);
-
-      const updated = await prisma.address.updateMany({
-        where: { id: parseInt(id), user_id: userId },
-        data
-      });
-
-      if (updated.count === 0) {
-        return errorResponse(res, 404, 'Address not found or you don\'t have permission');
-      }
-
-      const updatedAddress = await prisma.address.findUnique({ where: { id: parseInt(id) } });
-      return successResponse(res,200, 'Address updated successfully', updatedAddress);
-    } catch (error) {
-      logger.error(`Update address error: ${error.message}`);
-      if (error instanceof errors.E_VALIDATION_ERROR) {
-        return errorResponse(res, 422, error.messages);
-      }
-      return errorResponse(res, 500, 'Internal server error');
-    }
-  }
-
-  static async deleteAddress(req, res) {
-    try {
-      const { id } = req.params;
-      const userId = req.user.userId;
-
-      const address = await prisma.address.findUnique({
-        where: { id: parseInt(id), user_id: userId }
-      });
-
-      if (!address) return errorResponse(res, 404, 'Address not found');
-
-      await prisma.address.delete({ where: { id: parseInt(id) } });
-
-      if (address.is_primary) {
-        const newPrimary = await prisma.address.findFirst({
-          where: { user_id: userId },
-          orderBy: { created_at: 'desc' }
-        });
-        if (newPrimary) {
-          await prisma.address.update({
-            where: { id: newPrimary.id },
-            data: { is_primary: true }
-          });
-        }
-      }
-
-      return successResponse(res, 200, 'Address deleted successfully',{});
-    } catch (error) {
-      logger.error(`Delete address error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to delete address');
-    }
-  }
-
-  static async setPrimaryAddress(req, res) {
-    try {
-      const { id } = req.params;
-      const userId = req.user.userId;
-
-      await UserController.resetPrimaryAddress(userId);
-
-      const primaryAddress = await prisma.address.update({
-        where: { id: parseInt(id), user_id: userId },
-        data: { is_primary: true }
-      });
-
-      return successResponse(res,200, 'Primary address updated', primaryAddress);
-    } catch (error) {
-      console.log(`Set primary error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to set primary address');
-    }
-  }
-
-  static async resetPrimaryAddress(userId) {
-    await prisma.address.updateMany({
-      where: { user_id: userId, is_primary: true },
-      data: { is_primary: false }
-    });
-  }
-
+ 
   static async updateProfile(req, res) {
     try {
       const userId = req.user?.userId;
@@ -183,6 +65,7 @@ class UserController {
   static async getProfile(req, res) {
     try {
       const userId = req.user?.userId;
+  
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -191,72 +74,133 @@ class UserController {
           email: true,
           phone_number: true,
           created_at: true,
-          verification: { select: { email_status: true, phone_status: true } }
-        }
+          verification: {
+            select: {
+              email_status: true,
+              phone_status: true,
+            },
+          },
+          preference: {
+            select: {
+              notify_product_updates: true,
+            },
+          },
+          addresses: {
+            select: {
+              id: true,
+              phone: true,
+              house_no: true,
+              street: true,
+              landmark: true,
+              city: true,
+              state: true,
+              country: true,
+              pincode: true,
+              address_type: true,
+              is_primary: true,
+              created_at: true,
+              updated_at: true,
+            },
+            orderBy: { is_primary: 'desc' }, // primary address first
+          },
+        },
       });
-
+  
       if (!user) return errorResponse(res, 404, 'User not found');
-
-      return successResponse(res,200, `Hello ${user.name}, Welcome Back`, {
+  
+      return successResponse(res, 200, `Hello ${user.name}, Welcome Back`, {
         id: user.id,
         name: user.name,
         email: user.email,
         phone_number: user.phone_number,
-        joined_at: user.created_at.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        joined_at: user.created_at.toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }),
         profile_status: {
           email_status: user.verification?.email_status || 'PENDING',
-          phone_status: user.verification?.phone_status || 'PENDING'
-        }
+          phone_status: user.verification?.phone_status || 'PENDING',
+        },
+        notify_product_updates: user.preference?.notify_product_updates ?? null,
+        addresses: user.addresses ?? [],
       });
     } catch (error) {
       console.error(error);
       return errorResponse(res, 500, 'Internal server error');
     }
   }
+  
 
-  static async getAllUsers(req, res) {
-    try {
-      const users = await prisma.user.findMany({
+  
+static async getAllUsers(req, res) {
+  try {
+    const { skip, limit, search, page } = getPaginationParams(req);
+
+    const whereClause = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone_number: { contains: search, mode: 'insensitive' } }
+          ]
+        }
+      : {};
+
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where: whereClause,
         include: {
           addresses: true,
           verification: true
-        }
-      });
+        },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.user.count({ where: whereClause })
+    ]);
 
-      const processedUsers = users.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone_number: user.phone_number,
-        email_verified: user.verification?.email_status === 'VERIFIED',
-        phone_verified: user.phone_number
-          ? user.verification?.phone_status === 'VERIFIED'
-          : false,
-        addresses: user.addresses.map(address => ({
-          id: address.id,
-          name: address.name,
-          phone: address.phone,
-          house_no: address.house_no,
-          street: address.street,
-          landmark: address.landmark,
-          city: address.city,
-          state: address.state,
-          country: address.country,
-          pincode: address.pincode,
-          address_type: address.address_type,
-          is_primary: address.is_primary
-        })),
-        created_at: user.created_at,
-        updated_at: user.updated_at
-      }));
+    const processedUsers = users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone_number: user.phone_number,
+      email_verified: user.verification?.email_status === 'VERIFIED',
+      phone_verified: user.phone_number
+        ? user.verification?.phone_status === 'VERIFIED'
+        : false,
+      addresses: user.addresses.map(address => ({
+        id: address.id,
+        phone: address.phone,
+        house_no: address.house_no,
+        street: address.street,
+        landmark: address.landmark,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+        pincode: address.pincode,
+        address_type: address.address_type,
+        is_primary: address.is_primary
+      })),
+      created_at: user.created_at,
+      updated_at: user.updated_at
+    }));
 
-      return successResponse(res, 200, `Total ${processedUsers.length} users available`, processedUsers);
-    } catch (error) {
-      console.error(`Get users error: ${error.message}`);
-      return errorResponse(res, 500, 'Failed to fetch users');
-    }
+    return successResponse(res, 200, 'Users fetched successfully', {
+      users: processedUsers,
+      pagination: {
+        totalRecords: totalCount,
+        currentPage: page,
+        perPage: limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
+  } catch (error) {
+    console.error(`Get users error: ${error.message}`);
+    return errorResponse(res, 500, 'Failed to fetch users');
   }
+}
 
   static async updateUserRole(req, res) {
     try {
@@ -294,6 +238,8 @@ class UserController {
       return errorResponse(res, 500, 'Failed to delete user');
     }
   }
+
+
 }
 
 export default UserController;

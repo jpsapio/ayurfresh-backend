@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
+  id           Int               @id @default(autoincrement())
   name         String
-  email        String   @unique @db.VarChar(191)
+  email        String            @unique @db.VarChar(191)
   password     String
-  phone_number String?  @unique @db.VarChar(15)
-  role         Role     @default(USER)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  phone_number String?           @unique @db.VarChar(15)
+  role         Role              @default(USER)
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
 
-  verification UserVerification?
-  preference   UserPreference?
-  addresses    Address[]
-  products     Product[]
-  orders       Order[]
-
+  verification  UserVerification?
+  preference    UserPreference?
+  addresses     Address[]
+  products      Product[]
+  orders        Order[]
+  reviews       Review[]
+  cart          Cart?
 }
 
 model UserVerification {
@@ -51,22 +52,23 @@ model Address {
   id           Int         @id @default(autoincrement())
   user         User        @relation(fields: [user_id], references: [id])
   user_id      Int
-  name         String
+
   phone        String      @db.VarChar(15)
   house_no     String
   street       String
-  landmark     String?
   city         String
   state        String
   country      String      @default("India")
   pincode      String      @db.VarChar(6)
+  landmark     String?
   address_type AddressType @default(HOME)
   is_primary   Boolean     @default(false)
+
   created_at   DateTime    @default(now())
   updated_at   DateTime    @updatedAt
-
-  @@index([user_id])
 }
+
+
 
 model Product {
   id            Int            @id @default(autoincrement())
@@ -86,6 +88,8 @@ model Product {
   created_by    User           @relation(fields: [user_id], references: [id])
   user_id       Int
   order_items   OrderItem[]
+  reviews       Review[]
+  cartItems     CartItem[]
   created_at    DateTime       @default(now())
   updated_at    DateTime       @updatedAt
 }
@@ -126,6 +130,40 @@ model OrderItem {
   price      Float
   order      Order   @relation(fields: [order_id], references: [id])
   order_id   Int
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [user_id], references: [id])
+  user_id    Int
+  product    Product  @relation(fields: [product_id], references: [id])
+  product_id Int
+  rating     Float    // Decimal ratings (1.0 to 5.0)
+  comment    String?  @db.VarChar(1000) // Optional review text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([user_id, product_id]) // Prevent duplicate reviews
+}
+
+model Cart {
+  id         Int        @id @default(autoincrement())
+  user       User       @relation(fields: [user_id], references: [id])
+  user_id    Int        @unique // One cart per user
+  items      CartItem[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+}
+
+model CartItem {
+  id         Int     @id @default(autoincrement())
+  cart       Cart    @relation(fields: [cart_id], references: [id])
+  cart_id    Int
+  product    Product @relation(fields: [product_id], references: [id])
+  product_id Int
+  quantity   Int     @default(1)
+
+  @@unique([cart_id, product_id]) // Prevent duplicate products in cart
 }
 
 enum AddressType {

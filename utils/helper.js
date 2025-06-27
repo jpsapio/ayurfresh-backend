@@ -82,3 +82,14 @@ export const slugify = (text) => {
     .trim()
     .replace(/[\s\W-]+/g, '-') // Replace spaces and non-word characters with hyphens
 }
+
+
+export function getPaginationParams(req, defaultLimit = 8) {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.record) || defaultLimit;
+  const skip = (page - 1) * limit;
+
+  const search = req.query.search?.trim() || '';
+
+  return { page, limit, skip, search };
+}
