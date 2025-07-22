@@ -179,6 +179,26 @@ class ProductController {
         },
       });
   
+      // Fetch average rating and count of reviews per product
+      const reviewStats = await prisma.review.groupBy({
+        by: ['product_id'],
+        _avg: {
+          rating: true,
+        },
+        _count: {
+          id: true,
+        },
+      });
+  
+      // Map review stats by product_id for faster lookup
+      const reviewMap = new Map();
+      reviewStats.forEach((stat) => {
+        reviewMap.set(stat.product_id, {
+          avgRating: Number(stat._avg.rating?.toFixed(1)) || 0,
+          totalReviews: stat._count.id || 0,
+        });
+      });
+  
       const transformedProducts = products.map((product) => {
         const words = product.description.split(" ");
         const shortDescription =
@@ -190,6 +210,8 @@ class ProductController {
         } else if (product.offer_type === "PERCENTAGE") {
           offeredPrice = Math.round(product.price - (product.price * product.offer_value) / 100);
         }
+  
+        const review = reviewMap.get(product.id) || { avgRating: 0, totalReviews: 0 };
   
         return {
           id: product.id,
@@ -210,6 +232,8 @@ class ProductController {
             slug: product.category.slug,
           },
           image: product.images.length > 0 ? product.images[0].url : null,
+          average_rating: review.avgRating,
+          total_reviews: review.totalReviews,
         };
       });
   
@@ -224,11 +248,12 @@ class ProductController {
       return errorResponse(res, 500, "Internal server error");
     }
   }
+  
+  
   static async getByCategorySlug(req, res) {
     const { slug } = req.params;
   
     try {
-      // Step 1: Get category by slug
       const category = await prisma.category.findUnique({
         where: { slug },
       });
@@ -237,7 +262,6 @@ class ProductController {
         return errorResponse(res, 404, "Category not found");
       }
   
-      // Step 2: Get products with category_id
       const products = await prisma.product.findMany({
         where: {
           category_id: category.id,
@@ -267,7 +291,28 @@ class ProductController {
         },
       });
   
-      // Step 3: Transform products
+      // Fetch review stats for only products in this category
+      const reviewStats = await prisma.review.groupBy({
+        by: ['product_id'],
+        where: {
+          product_id: { in: products.map((p) => p.id) },
+        },
+        _avg: {
+          rating: true,
+        },
+        _count: {
+          id: true,
+        },
+      });
+  
+      const reviewMap = new Map();
+      reviewStats.forEach((stat) => {
+        reviewMap.set(stat.product_id, {
+          avgRating: Number(stat._avg.rating?.toFixed(1)) || 0,
+          totalReviews: stat._count.id || 0,
+        });
+      });
+  
       const transformedProducts = products.map((product) => {
         const words = product.description.split(" ");
         const shortDescription =
@@ -279,6 +324,8 @@ class ProductController {
         } else if (product.offer_type === "PERCENTAGE") {
           offeredPrice = Math.round(product.price - (product.price * product.offer_value) / 100);
         }
+  
+        const review = reviewMap.get(product.id) || { avgRating: 0, totalReviews: 0 };
   
         return {
           id: product.id,
@@ -299,6 +346,8 @@ class ProductController {
             slug: product.category.slug,
           },
           image: product.images.length > 0 ? product.images[0].url : null,
+          average_rating: review.avgRating,
+          total_reviews: review.totalReviews,
         };
       });
   
@@ -313,11 +362,11 @@ class ProductController {
       return errorResponse(res, 500, "Internal server error");
     }
   }
+  
   static async productPage(req, res) {
     const { slug } = req.params;
   
     try {
-      // Step 1: Find product by slug including category and created_by
       const product = await prisma.product.findUnique({
         where: { slug },
         include: {

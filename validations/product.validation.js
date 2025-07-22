@@ -48,3 +48,15 @@ export const productUpdateValidator = vine.object({
   category_id: vine.number().optional(),
   primary_image_index: vine.number().min(0).max(3).optional(),
 })
+
+export const reviewValidator = vine.object({
+  rating: vine.number().min(1).max(5),
+  comment: vine
+    .string()
+    .maxLength(1000)
+    .optional()
+})
+export const updateCartQuantitySchema = vine.object({
+  slug: vine.string().trim(),
+  type: vine.enum(["INCREMENT", "DECREMENT"]),
+});

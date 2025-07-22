@@ -10,13 +10,20 @@ export const generateAuthToken = (user) => {
     return jwt.sign(
    user,
      JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: '7d' }
     )
   }
   
-  export const  generateOTP=()=> {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  export function generateOtp(length = 6) {
+    return Math.floor(100000 + Math.random() * 900000).toString().slice(0, length);
   }
+  
+  export function getExpiryMinutesFromNow(minutes = 2) {
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + minutes);
+    return expiry;
+  }
+  
   
 
   export const calculateOfferedPrice = (price, offer_type, offer_value) => {

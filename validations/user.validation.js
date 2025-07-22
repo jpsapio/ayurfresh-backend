@@ -36,3 +36,11 @@ export const updateAddressSchema = vine.object({
   address_type: vine.enum(['HOME', 'WORK', 'OTHER']).optional(),
   is_primary: vine.boolean().optional()
 })
+export const addToCartSchema = vine.object({
+  slug: vine.string().trim().minLength(1),
+  quantity: vine.number().positive().min(1).optional(),
+});
+
+export const removeCartItemSchema = vine.object({
+  slug: vine.string().trim().minLength(1),
+});

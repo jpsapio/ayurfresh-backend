@@ -16,6 +16,7 @@ dotenv.config();
  export const TWILIO_ACCOUNT_ID= process.env.TWILIO_ACCOUNT_ID
  export const TWILIO_AUTH_TOKEN= process.env.TWILIO_AUTH_TOKEN
  export const TWILIO_NUMBER= process.env.TWILIO_NUMBER
+ export const OTP_EXPIRY_MINUTES= process.env.OTP_EXPIRY_MINUTES
  export const  FRONTEND_URL= process.env.FRONTEND_URL
  export const  CLOUDINARY_CLOUD_NAME= process.env.CLOUDINARY_CLOUD_NAME
  export const  CLOUDINARY_API_KEY= process.env.CLOUDINARY_API_KEY

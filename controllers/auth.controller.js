@@ -12,7 +12,7 @@ import bcrypt from "bcrypt";
 import { sendMail } from "../config/mail.js";
 import { renderEmailEjs } from "../utils/ejsHandler.js";
 import { BACKEND_URL, FRONTEND_URL } from "../config/env.js";
-import { generateAuthToken, generateOTP } from "../utils/helper.js";
+import { generateAuthToken, generateOtp } from "../utils/helper.js";
 import { sendSMS } from "../config/twilioSms.js";
 import {
   successResponse,
@@ -344,98 +344,6 @@ static async login(req, res) {
         return validationErrorResponse(res, error.messages);
       }
       return errorResponse(res, 500, error.message);
-    }
-  }
-
-  static async sendPhoneOtp(req, res) {
-    try {
-      const userId = req.user?.userId;
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { verification: true },
-      });
-
-      if (!user || !user.phone_number) {
-        return errorResponse(res, 400, "Phone number not found for user");
-      }
-
-      if (user.verification?.phone_status === "VERIFIED") {
-        return successResponse(res, 200, "Phone number already verified");
-      }
-
-      const otp = generateOTP();
-      const expiry = new Date(Date.now() + 5 * 60 * 1000);
-
-      await prisma.userVerification.upsert({
-        where: { user_id: userId },
-        update: {
-          phone_otp: otp,
-          otp_expiry: expiry,
-        },
-        create: {
-          user_id: userId,
-          phone_otp: otp,
-          otp_expiry: expiry,
-        },
-      });
-
-      const smsRes = await sendSMS(user.phone_number, `Your OTP is ${otp}. Valid for 5 minutes.`);
-
-      if (!smsRes.success) {
-        return errorResponse(res, 500, smsRes.error || "Failed to send OTP");
-      }
-
-      return successResponse(res, 200, "OTP sent successfully");
-    } catch (err) {
-      console.error(err);
-      return errorResponse(res, 500, err.message);
-    }
-  }
-
-  static async verifyPhoneOtp(req, res) {
-    try {
-      const userId = req.user?.userId;
-      const { otp } = req.body;
-
-      if (!otp) {
-        return errorResponse(res, 400, "OTP is required");
-      }
-
-      const verification = await prisma.userVerification.findUnique({
-        where: { user_id: userId },
-      });
-
-      if (!verification) {
-        return errorResponse(res, 400, "No OTP found for user");
-      }
-
-      if (verification.phone_status === "VERIFIED") {
-        return successResponse(res, 200, "Phone number already verified");
-      }
-
-      if (
-        verification.phone_otp !== otp ||
-        !verification.otp_expiry ||
-        new Date() > verification.otp_expiry
-      ) {
-        return errorResponse(res, 400, "Invalid or expired OTP");
-      }
-
-      await prisma.userVerification.update({
-        where: { user_id: userId },
-        data: {
-          phone_status: "VERIFIED",
-          phone_verified_at: new Date(),
-          phone_otp: null,
-          otp_expiry: null,
-        },
-      });
-
-      return successResponse(res, 200, "Phone number verified successfully");
-    } catch (err) {
-      console.error(err);
-      return errorResponse(res, 500, err.message);
     }
   }
 }

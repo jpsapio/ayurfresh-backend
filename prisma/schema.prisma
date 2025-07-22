@@ -165,6 +165,25 @@ model CartItem {
 
   @@unique([cart_id, product_id]) // Prevent duplicate products in cart
 }
+model ServiceablePincode {
+  id        Int    @id @default(autoincrement())
+  pincode   String @unique
+  city      String
+  delivery_days Int     
+  delivery_charge Int   
+  created_at DateTime @default(now())
+}
+
+model Enquiry {
+  id             Int      @id @default(autoincrement())
+  company_name   String
+  contact_person String
+  email          String
+  phone          String
+  business_need  String
+    responded      Boolean  @default(false)
+  created_at     DateTime @default(now())
+}
 
 enum AddressType {
   HOME
